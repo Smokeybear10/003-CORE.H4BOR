@@ -1,0 +1,71 @@
+# HarborOS
+
+Maritime awareness and operator decision-support platform for contested littoral defense.
+
+Detect suspicious vessels. Assess risk. Recommend action. Dispatch verification.
+
+## Quick Start
+
+```bash
+# Backend
+cd backend
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+python -m app.seed          # Load demo data
+uvicorn app.main:app --reload --port 8000
+
+# Frontend (separate terminal)
+cd frontend
+npm install
+npm run dev                 # Starts on http://localhost:3000
+```
+
+## What You'll See
+
+Open `http://localhost:3000` — an operator console showing:
+
+- **Map view** of LA Harbor with ~15 vessels, color-coded by risk
+- **Alert feed** with suspicious contacts flagged and triaged
+- **Vessel detail panel** with risk score, anomaly signals, and recommended action
+- **Verification request** button demonstrating future hardware integration
+
+## Project Structure
+
+```
+HarborOS/
+├── backend/
+│   ├── app/
+│   │   ├── main.py              # FastAPI application
+│   │   ├── database.py          # SQLite setup
+│   │   ├── seed.py              # Demo data seeder
+│   │   ├── models/              # Domain models (SQLAlchemy + Pydantic)
+│   │   ├── services/            # Anomaly detection, risk scoring
+│   │   ├── api/                 # Route handlers
+│   │   └── data_sources/        # Source adapters (AIS, NOAA, NWS, USCG)
+│   └── requirements.txt
+├── frontend/                    # Next.js operator dashboard
+├── data/demo/                   # Seeded demo fixtures
+├── docs/                        # Project docs
+│   ├── PROJECT_PLAN.md
+│   ├── DEMO_STORY.md
+│   ├── DATA_SOURCES.md
+│   └── PITCH.md
+└── README.md
+```
+
+## Why This Matters
+
+Harbors and littoral zones are increasingly contested. Legacy defense systems are expensive, siloed, and slow. HarborOS proves that persistent maritime awareness, smart anomaly detection, and rapid verification loops can be built with software alone — cheaply, quickly, and extensibly.
+
+Every alert is explainable. Every risk score shows its work. Every verification request is a clean API call away from dispatching a real asset. The software layer is the hard part, and it works today.
+
+## Stack
+
+- **Backend**: Python / FastAPI / SQLite (SQLAlchemy)
+- **Frontend**: Next.js / TypeScript / Tailwind / MapLibre GL
+- **Data**: Seeded fixtures with adapters for AIS, NOAA, NWS, USCG sources
+
+## License
+
+Proprietary — Hackathon MVP
