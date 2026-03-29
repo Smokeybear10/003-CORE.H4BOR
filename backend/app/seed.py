@@ -1193,7 +1193,7 @@ def seed():
                 },
             },
             {
-                "anomaly_type": "identity_anomaly",
+                "anomaly_type": "type_mismatch",
                 "severity": 0.85,
                 "description": (
                     "Multiple identity red flags: IMO number missing (required for cargo vessels "
@@ -1210,18 +1210,53 @@ def seed():
                     "psc_detention_history": "unknown",
                 },
             },
+            {
+                "anomaly_type": "zone_lingering",
+                "severity": 0.78,
+                "description": (
+                    "Vessel lingered within 0.3 nm of LNG Terminal Security Zone for 50 minutes. "
+                    "Repeated slow passes along the perimeter suggest deliberate reconnaissance. "
+                    "Speed dropped to 0 kt on 4 occasions while oriented toward the terminal."
+                ),
+                "details": {
+                    "zone_id": "gf-security-zone-lng",
+                    "zone_name": "LNG Terminal Security Zone",
+                    "linger_duration_min": 50,
+                    "min_distance_nm": 0.3,
+                    "dead_stops": 4,
+                    "perimeter_passes": 6,
+                },
+            },
+            {
+                "anomaly_type": "speed_anomaly",
+                "severity": 0.62,
+                "description": (
+                    "Abnormal speed profile: vessel accelerated to 14+ kt in restricted harbor zone "
+                    "(speed limit 8 kt) during sprint toward LNG terminal, then decelerated to "
+                    "near-zero within 3 minutes. Speed variance across track is 6.8 kt — "
+                    "3.2x the regional average for cargo vessels."
+                ),
+                "details": {
+                    "max_speed_kt": 15.2,
+                    "zone_speed_limit_kt": 8,
+                    "speed_variance_kt": 6.8,
+                    "regional_avg_variance_kt": 2.1,
+                    "rapid_decel_events": 3,
+                },
+            },
         ]
 
         dark_horizon_alert = AlertORM(
             id=dark_horizon_alert_id,
             vessel_id="v-dark-horizon",
-            risk_score=84.0,
+            risk_score=100.0,
             recommended_action="escalate",
             explanation=(
-                "MV DARK HORIZON exhibits 5 anomaly signals across identity, spatial, and behavioral "
+                "MV DARK HORIZON exhibits 7 anomaly signals across identity, spatial, and behavioral "
                 "dimensions. Vessel went dark twice before appearing inside APM Terminal Restricted Zone "
-                "with sustained loitering. No IMO, no callsign, no voyage plan, Marshall Islands flag. "
-                "Recommend USCG verification and potential boarding."
+                "with sustained loitering. Sprinted at 14+ kt toward LNG terminal then lingered along "
+                "its perimeter. No IMO, no callsign, no voyage plan, Marshall Islands flag. "
+                "Recommend immediate USCG verification and potential boarding."
             ),
             anomaly_signals_json=json.dumps(dark_horizon_signals),
         )
