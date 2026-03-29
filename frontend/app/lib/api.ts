@@ -147,6 +147,47 @@ export interface DetectionMetrics {
   precision: number | null;
 }
 
+// ── SAR Types ────────────────────────────────────────
+
+export interface SARTileInfo {
+  tile_url: string;
+  source: string;
+  time_range: string;
+  resolution: string;
+  mode: string;
+  polarization: string;
+  note: string;
+}
+
+export interface SARInfo {
+  tiles: SARTileInfo;
+  constellation: {
+    constellation: string;
+    satellites: string[];
+    resolution: string;
+    revisit_days: number;
+    frequency: string;
+    polarization: string;
+  };
+}
+
+export interface WakeDetectionFeature {
+  type: "Feature";
+  id: string;
+  geometry: { type: "Polygon"; coordinates: number[][][] };
+  properties: {
+    confidence: number;
+    class: string;
+    description: string;
+    detection_id: string;
+  };
+}
+
+export interface WakeDetectionCollection {
+  type: "FeatureCollection";
+  features: WakeDetectionFeature[];
+}
+
 // ── API Functions ─────────────────────────────────────
 
 export const api = {
@@ -192,4 +233,18 @@ export const api = {
   getVerificationRequest: (id: string) =>
     fetchAPI<VerificationRequest>(`/verification-requests/${id}`),
   getIngestionStatus: () => fetchAPI<IngestionStatus>("/ingestion/status"),
+  getSARInfo: () => fetchAPI<SARInfo>("/sar/info"),
+  getSARDetections: (opts: {
+    region?: string | null;
+    bbox?: { sw: [number, number]; ne: [number, number] };
+  } = {}) => {
+    const params = new URLSearchParams();
+    if (opts.region) params.set("region", opts.region);
+    if (opts.bbox) {
+      // bbox as lat_min,lon_min,lat_max,lon_max
+      params.set("bbox", `${opts.bbox.sw[1]},${opts.bbox.sw[0]},${opts.bbox.ne[1]},${opts.bbox.ne[0]}`);
+    }
+    const qs = params.toString();
+    return fetchAPI<WakeDetectionCollection>(`/sar/detections${qs ? `?${qs}` : ""}`);
+  },
 };

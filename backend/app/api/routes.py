@@ -382,17 +382,40 @@ def create_verification_request(
         "patrol_boat": {"asset_id": "PB-07", "name": "Harbor Patrol 07", "eta_min": 12},
         "drone": {"asset_id": "UAV-12", "name": "Surveillance Drone 12", "eta_min": 8},
         "satellite": {"asset_id": "SENTINEL-2A", "name": "Sentinel-2A (ESA)", "eta_min": 47},
+        "sar": {"asset_id": "SENTINEL-1A", "name": "Sentinel-1A SAR (ESA)", "eta_min": 35},
     }
     asset = asset_registry.get(req.asset_type, asset_registry["camera"])
 
     is_satellite = (req.asset_type == "satellite")
+    is_sar = (req.asset_type == "sar")
     now = datetime.utcnow()
 
-    # For satellite: immediately return last-pass imagery data
+    # For satellite/SAR: immediately return last-pass imagery data
     last_pass_notes = None
     last_pass_confidence = None
     last_pass_media = None
-    if is_satellite:
+    if is_sar:
+        import random
+        days_ago = random.randint(1, 3)
+        last_pass_notes = json.dumps({
+            "last_pass": {
+                "acquired": (now - __import__("datetime").timedelta(days=days_ago)).isoformat() + "Z",
+                "satellite": "Sentinel-1A",
+                "resolution_m": 10,
+                "mode": "IW",
+                "polarization": "VV",
+                "status": "delivered",
+            },
+            "next_pass": {
+                "eta_minutes": asset["eta_min"],
+                "satellite": "Sentinel-1A",
+                "expected_resolution_m": 10,
+                "status": "tasking_accepted",
+            },
+        })
+        last_pass_confidence = round(random.uniform(0.70, 0.88), 2)
+        last_pass_media = f"s1_iw_{now.strftime('%Y%m%d')}_{days_ago}d_ago.tif"
+    elif is_satellite:
         import random
         days_ago = random.randint(1, 4)
         cloud_cover = random.randint(5, 35)
@@ -419,7 +442,7 @@ def create_verification_request(
         id=str(uuid.uuid4()),
         alert_id=req.alert_id,
         vessel_id=req.vessel_id,
-        status="in_progress" if is_satellite else "assigned",
+        status="in_progress" if (is_satellite or is_sar) else "assigned",
         asset_type=req.asset_type or "camera",
         asset_id=asset["asset_id"],
         created_at=now,
@@ -478,6 +501,29 @@ def get_verification_request(request_id: str, db: Session = Depends(get_db)):
             vr.result_notes = json.dumps(existing)
             vr.result_confidence = round(0.85 - (cloud_cover / 100) * 0.2, 2)
             vr.result_media_ref = f"s2_tile_{datetime.utcnow().strftime('%Y%m%d')}_fresh.tif"
+            vr.updated_at = datetime.utcnow()
+            db.commit()
+
+    # Simulate SAR next-pass completion (15s after creation for demo)
+    if vr.asset_type == "sar" and vr.status == "in_progress":
+        elapsed = (datetime.utcnow() - vr.created_at).total_seconds()
+        if elapsed > 15:
+            import random
+            existing = json.loads(vr.result_notes) if vr.result_notes else {}
+            wake_count = random.randint(1, 4)
+            existing["next_pass"] = {
+                "acquired": datetime.utcnow().isoformat() + "Z",
+                "satellite": "Sentinel-1A",
+                "resolution_m": 10,
+                "mode": "IW",
+                "polarization": "VV",
+                "wake_detections": wake_count,
+                "status": "delivered",
+            }
+            vr.status = "completed"
+            vr.result_notes = json.dumps(existing)
+            vr.result_confidence = round(random.uniform(0.80, 0.93), 2)
+            vr.result_media_ref = f"s1_iw_{datetime.utcnow().strftime('%Y%m%d')}_fresh.tif"
             vr.updated_at = datetime.utcnow()
             db.commit()
 
@@ -630,6 +676,88 @@ def satellite_info():
         "tiles": get_sentinel2_tile_url(),
         "constellation": get_sentinel2_info(),
     }
+
+
+# ── SAR Imagery ────────────────────────────────────────
+
+@router.get("/sar/info")
+def sar_info():
+    """Get Sentinel-1 SAR constellation info and tile URLs."""
+    from app.data_sources.sar_adapter import get_sentinel1_tile_url, get_sentinel1_info
+    return {
+        "tiles": get_sentinel1_tile_url(),
+        "constellation": get_sentinel1_info(),
+    }
+
+
+@router.get("/sar/detections")
+def sar_detections(
+    region: str | None = Query(None, description="Region key (e.g. 'la_harbor')"),
+    bbox: str | None = Query(None, description="Viewport bounds: lat_min,lon_min,lat_max,lon_max"),
+    image: str | None = Query(None, description="Explicit image filename from wake-det test set"),
+):
+    """Run wake-detection on the SAR image covering the current map viewport.
+
+    The frontend sends the map viewport bounds (bbox). The model runs on a SAR
+    image and its pixel-space detections are projected into those bounds — so
+    the OBB results land exactly on what the user is looking at.
+    """
+    from app.data_sources.sar_adapter import (
+        run_wake_detection,
+        get_mock_wake_detections,
+        get_available_images,
+        DEFAULT_IMAGE_DIR,
+    )
+
+    # Parse bbox from viewport or region definition
+    geo_bbox = None
+    center_lat, center_lng = 33.73, -118.26
+
+    if bbox:
+        try:
+            parts = [float(x) for x in bbox.split(",")]
+            geo_bbox = [[parts[0], parts[1]], [parts[2], parts[3]]]
+            center_lat = (parts[0] + parts[2]) / 2
+            center_lng = (parts[1] + parts[3]) / 2
+        except (ValueError, IndexError):
+            pass
+
+    if geo_bbox is None and region:
+        from app.data_sources.aisstream_adapter import REGIONS
+        reg = REGIONS.get(region)
+        if reg:
+            geo_bbox = reg["bbox"]
+            center_lat = reg["center"][0]
+            center_lng = reg["center"][1]
+
+    if geo_bbox is None:
+        offset = 0.08
+        geo_bbox = [[center_lat - offset, center_lng - offset],
+                     [center_lat + offset, center_lng + offset]]
+
+    # Resolve image — the SAR image representing what the user is viewing
+    image_path = None
+    if image:
+        candidate = DEFAULT_IMAGE_DIR / image
+        if candidate.exists():
+            image_path = candidate
+
+    if image_path is None:
+        # Pick a deterministic image based on region (consistent per-region)
+        available = get_available_images(limit=50)
+        if available:
+            idx = hash(region or "default") % len(available)
+            image_path = available[idx]["path"]
+
+    if image_path is None:
+        return get_mock_wake_detections(center_lat=center_lat, center_lng=center_lng)
+
+    try:
+        return run_wake_detection(image_path=image_path, bbox=geo_bbox)
+    except Exception:
+        import traceback
+        traceback.print_exc()
+        return get_mock_wake_detections(center_lat=center_lat, center_lng=center_lng)
 
 
 @router.post("/archive/run")

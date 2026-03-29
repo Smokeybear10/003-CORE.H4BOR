@@ -249,12 +249,13 @@ export default function VesselDetailPanel({ vessel, alertId, onClose, onSatellit
             />
           ) : (
             <div className="space-y-2.5">
-              <div className="grid grid-cols-4 gap-1.5">
+              <div className="grid grid-cols-5 gap-1.5">
                 {[
                   { key: "camera", label: "Camera" },
                   { key: "drone", label: "Drone" },
                   { key: "patrol_boat", label: "Patrol" },
                   { key: "satellite", label: "Satellite" },
+                  { key: "sar", label: "SAR" },
                 ].map((a) => (
                   <button
                     key={a.key}
@@ -274,7 +275,7 @@ export default function VesselDetailPanel({ vessel, alertId, onClose, onSatellit
                 disabled={verifyLoading || !alertId}
                 className="w-full py-2.5 px-4 bg-blue-500/15 hover:bg-blue-500/25 border border-blue-500/25 hover:border-blue-500/40 disabled:bg-[#111827] disabled:border-[#1a2235] disabled:text-slate-600 text-blue-400 text-sm font-medium rounded-lg transition-all"
               >
-                {verifyLoading ? "Requesting..." : `Request ${verifyAsset === "satellite" ? "Satellite Pass" : "Verification"}`}
+                {verifyLoading ? "Requesting..." : `Request ${verifyAsset === "satellite" ? "Satellite Pass" : verifyAsset === "sar" ? "SAR Pass" : "Verification"}`}
               </button>
             </div>
           )}
@@ -406,7 +407,7 @@ function SatelliteVerificationResult({ verification, vesselPosition, vesselName,
 
   // Poll for satellite next-pass completion
   useEffect(() => {
-    if (liveVr.asset_type !== "satellite" || liveVr.status === "completed") return;
+    if ((liveVr.asset_type !== "satellite" && liveVr.asset_type !== "sar") || liveVr.status === "completed") return;
     const interval = setInterval(async () => {
       try {
         const updated = await api.getVerificationRequest(liveVr.id);
@@ -436,7 +437,7 @@ function SatelliteVerificationResult({ verification, vesselPosition, vesselName,
     try { return JSON.parse(liveVr.result_notes); } catch { return null; }
   })() : null;
 
-  const isSatellite = liveVr.asset_type === "satellite";
+  const isSatellite = liveVr.asset_type === "satellite" || liveVr.asset_type === "sar";
   const isComplete = liveVr.status === "completed";
 
   return (

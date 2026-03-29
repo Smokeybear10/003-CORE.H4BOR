@@ -4,7 +4,7 @@ import { useEffect, useRef, useCallback, useState } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { api } from "@/app/lib/api";
-import type { Vessel, Geofence } from "@/app/lib/api";
+import type { Vessel, Geofence, WakeDetectionCollection } from "@/app/lib/api";
 
 export interface SatelliteFootprint {
   center: [number, number]; // [lng, lat]
@@ -20,6 +20,7 @@ interface MapViewProps {
   onSelectVessel: (vesselId: string) => void;
   flyTo?: { center: [number, number]; zoom: number } | null;
   satelliteFootprint?: SatelliteFootprint | null;
+  activeRegion?: string | null;
 }
 
 function vesselColor(score: number | null): string {
@@ -71,9 +72,86 @@ function vesselSvgPath(vesselType: string): { d: string; viewBox: string } {
   }
 }
 
-type BaseMap = "dark" | "satellite";
+type BaseMap = "dark" | "satellite" | "sar";
 
-function buildMapStyle(baseMap: BaseMap): maplibregl.StyleSpecification {
+function buildMapStyle(baseMap: BaseMap, sarTileUrl?: string | null): maplibregl.StyleSpecification {
+  const cartoLabels = {
+    "carto-labels": {
+      type: "raster" as const,
+      tiles: [
+        "https://a.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}@2x.png",
+        "https://b.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}@2x.png",
+      ],
+      tileSize: 256,
+      maxzoom: 18,
+    },
+  };
+
+  const labelsLayer = {
+    id: "labels",
+    type: "raster" as const,
+    source: "carto-labels",
+    minzoom: 3,
+    maxzoom: 22,
+    paint: { "raster-opacity": 0.8 },
+  };
+
+  if (baseMap === "sar") {
+    // SAR mode: greyscale Sentinel-1 backscatter tiles + labels
+    // Uses ESA Sentinel-1 WMTS via Sentinel Hub or fallback to dark base
+    // with SAR-style desaturation. Sentinel-1 is 10m/px so useful only to ~z14.
+    const sarUrl = sarTileUrl || (
+      "https://tiles.maps.eox.at/wmts/1.0.0/s1grdiw/"
+      + "default/g/{z}/{y}/{x}.jpg"
+    );
+    return {
+      version: 8,
+      glyphs: "https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf",
+      sources: {
+        // SAR tiles (10m resolution — useful to ~z14, blurry beyond)
+        "sar-tiles": {
+          type: "raster",
+          tiles: [sarUrl],
+          tileSize: 256,
+          maxzoom: 14,
+          attribution: "&copy; ESA Copernicus Sentinel-1",
+        },
+        // High-res optical underlay for zoom > 14 (fills in detail)
+        "optical-underlay": {
+          type: "raster",
+          tiles: [
+            "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+          ],
+          tileSize: 256,
+          minzoom: 14,
+          maxzoom: 18,
+        },
+        ...cartoLabels,
+      },
+      layers: [
+        // Optical underlay — only visible when zoomed beyond SAR resolution
+        {
+          id: "optical-underlay",
+          type: "raster",
+          source: "optical-underlay",
+          minzoom: 14,
+          maxzoom: 22,
+          paint: { "raster-saturation": -1, "raster-opacity": 0.7 },
+        },
+        // SAR overlay — full visibility up to z14, fades at high zoom
+        {
+          id: "sar-tiles",
+          type: "raster",
+          source: "sar-tiles",
+          minzoom: 0,
+          maxzoom: 18,
+          paint: { "raster-saturation": -1 },
+        },
+        labelsLayer,
+      ],
+    };
+  }
+
   if (baseMap === "satellite") {
     return {
       version: 8,
@@ -88,15 +166,7 @@ function buildMapStyle(baseMap: BaseMap): maplibregl.StyleSpecification {
           maxzoom: 18,
           attribution: "&copy; Esri, Maxar, Earthstar Geographics",
         },
-        "carto-labels": {
-          type: "raster",
-          tiles: [
-            "https://a.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}@2x.png",
-            "https://b.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}@2x.png",
-          ],
-          tileSize: 256,
-          maxzoom: 18,
-        },
+        ...cartoLabels,
       },
       layers: [
         {
@@ -106,14 +176,7 @@ function buildMapStyle(baseMap: BaseMap): maplibregl.StyleSpecification {
           minzoom: 0,
           maxzoom: 22,
         },
-        {
-          id: "labels",
-          type: "raster",
-          source: "carto-labels",
-          minzoom: 3,
-          maxzoom: 22,
-          paint: { "raster-opacity": 0.8 },
-        },
+        labelsLayer,
       ],
     };
   }
@@ -145,11 +208,16 @@ function buildMapStyle(baseMap: BaseMap): maplibregl.StyleSpecification {
   };
 }
 
-export default function MapView({ vessels, geofences, selectedVesselId, onSelectVessel, flyTo, satelliteFootprint }: MapViewProps) {
+export default function MapView({ vessels, geofences, selectedVesselId, onSelectVessel, flyTo, satelliteFootprint, activeRegion }: MapViewProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const markersRef = useRef<Record<string, { marker: maplibregl.Marker; el: HTMLDivElement }>>({});
   const [baseMap, setBaseMap] = useState<BaseMap>("satellite");
+  const [sarTileUrl, setSarTileUrl] = useState<string | null>(null);
+  const [wakeDetections, setWakeDetections] = useState<WakeDetectionCollection | null>(null);
+  const [sarDetLoading, setSarDetLoading] = useState(false);
+  const sarTileLoadedRef = useRef(false);
+  const sarDetRegionRef = useRef<string | null | undefined>(undefined);
 
   const updateMarkers = useCallback(() => {
     const map = mapRef.current;
@@ -219,7 +287,7 @@ export default function MapView({ vessels, geofences, selectedVesselId, onSelect
 
     const map = new maplibregl.Map({
       container: mapContainer.current,
-      style: buildMapStyle(baseMap),
+      style: buildMapStyle(baseMap, sarTileUrl),
       center: [-118.265, 33.725],
       zoom: 12.5,
       pitch: 0,
@@ -280,13 +348,50 @@ export default function MapView({ vessels, geofences, selectedVesselId, onSelect
     updateMarkers();
   }, [updateMarkers]);
 
+  // Lazy-load SAR tile URL on first toggle to SAR mode
+  useEffect(() => {
+    if (baseMap !== "sar" || sarTileLoadedRef.current) return;
+    sarTileLoadedRef.current = true;
+    api.getSARInfo().then((info) => {
+      setSarTileUrl(info.tiles.tile_url);
+    }).catch(() => {});
+  }, [baseMap]);
+
+  // Fetch wake detections when in SAR mode and region changes
+  // Runs inference on the SAR image covering the current map viewport
+  useEffect(() => {
+    if (baseMap !== "sar") return;
+    // Skip if we already fetched for this exact region
+    if (sarDetRegionRef.current === activeRegion) return;
+    sarDetRegionRef.current = activeRegion;
+
+    const map = mapRef.current;
+    // Get the current map viewport as geographic bounds
+    let bboxOpt: { sw: [number, number]; ne: [number, number] } | undefined;
+    if (map) {
+      const bounds = map.getBounds();
+      bboxOpt = {
+        sw: [bounds.getWest(), bounds.getSouth()],
+        ne: [bounds.getEast(), bounds.getNorth()],
+      };
+    }
+
+    setSarDetLoading(true);
+    setWakeDetections(null);
+    api.getSARDetections({ region: activeRegion, bbox: bboxOpt }).then((detections) => {
+      setWakeDetections(detections);
+    }).catch(() => {}).finally(() => {
+      setSarDetLoading(false);
+    });
+  }, [baseMap, activeRegion]);
+
   // Switch base map style
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
     const center = map.getCenter();
     const zoom = map.getZoom();
-    map.setStyle(buildMapStyle(baseMap));
+    map.setStyle(buildMapStyle(baseMap, sarTileUrl));
     map.once("styledata", () => {
       map.setCenter(center);
       map.setZoom(zoom);
@@ -308,9 +413,37 @@ export default function MapView({ vessels, geofences, selectedVesselId, onSelect
           });
         }
       });
+
+      // Add wake detection overlays in SAR mode
+      if (baseMap === "sar" && wakeDetections && !map.getSource("wake-detections")) {
+        map.addSource("wake-detections", {
+          type: "geojson",
+          data: wakeDetections as GeoJSON.FeatureCollection,
+        });
+        map.addLayer({
+          id: "wake-det-fill",
+          type: "fill",
+          source: "wake-detections",
+          paint: {
+            "fill-color": "#f97316",
+            "fill-opacity": 0.18,
+          },
+        });
+        map.addLayer({
+          id: "wake-det-line",
+          type: "line",
+          source: "wake-detections",
+          paint: {
+            "line-color": "#f97316",
+            "line-width": 2,
+            "line-opacity": 0.8,
+          },
+        });
+      }
+
       updateMarkers();
     });
-  }, [baseMap]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [baseMap, sarTileUrl, wakeDetections]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!flyTo || !mapRef.current) return;
@@ -467,6 +600,16 @@ export default function MapView({ vessels, geofences, selectedVesselId, onSelect
           <LegendItem color="#3b82f6" label="Shipping Lane" dashed />
           <LegendItem color="#22c55e" label="Anchorage" dashed />
         </div>
+        {baseMap === "sar" && (
+          <>
+            <div className="border-t border-[#1a2235] mt-3 pt-3 text-[9px] text-slate-500 uppercase tracking-[0.15em] mb-2.5 font-semibold">
+              Wake Detection
+            </div>
+            <div className="space-y-2">
+              <LegendItem color="#f97316" label="Ship Wake (OBB)" />
+            </div>
+          </>
+        )}
       </div>
       {/* Base map toggle */}
       <div className="absolute bottom-4 right-4 bg-[#0d1320]/95 backdrop-blur-md border border-[#1a2235] rounded-xl overflow-hidden shadow-xl shadow-black/30 flex">
@@ -481,6 +624,16 @@ export default function MapView({ vessels, geofences, selectedVesselId, onSelect
           Satellite
         </button>
         <button
+          onClick={() => setBaseMap("sar")}
+          className={`px-3 py-2 text-[10px] font-semibold uppercase tracking-wider transition-colors ${
+            baseMap === "sar"
+              ? "bg-orange-500/20 text-orange-400 border-r border-[#1a2235]"
+              : "text-slate-500 hover:text-slate-300 border-r border-[#1a2235]"
+          }`}
+        >
+          SAR
+        </button>
+        <button
           onClick={() => setBaseMap("dark")}
           className={`px-3 py-2 text-[10px] font-semibold uppercase tracking-wider transition-colors ${
             baseMap === "dark"
@@ -491,6 +644,30 @@ export default function MapView({ vessels, geofences, selectedVesselId, onSelect
           Dark
         </button>
       </div>
+      {/* SAR mode indicator */}
+      {baseMap === "sar" && (
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-orange-500/15 backdrop-blur-md border border-orange-500/30 rounded-lg px-4 py-1.5 shadow-xl shadow-black/30 flex items-center gap-3">
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-orange-400">
+            SAR Mode — Sentinel-1 C-Band (10m)
+          </span>
+          {sarDetLoading && (
+            <span className="text-[10px] text-orange-300/70 font-mono border-l border-orange-500/30 pl-3 flex items-center gap-1.5">
+              <span className="w-2 h-2 border border-orange-400/60 border-t-orange-400 rounded-full animate-spin" />
+              Running wake detection...
+            </span>
+          )}
+          {!sarDetLoading && wakeDetections && wakeDetections.features.length > 0 && (
+            <span className="text-[10px] text-orange-300/70 font-mono border-l border-orange-500/30 pl-3">
+              {wakeDetections.features.length} wake(s) detected
+            </span>
+          )}
+          {!sarDetLoading && wakeDetections && wakeDetections.features.length === 0 && (
+            <span className="text-[10px] text-slate-500 font-mono border-l border-orange-500/30 pl-3">
+              No wakes detected
+            </span>
+          )}
+        </div>
+      )}
       <style jsx global>{`
         @keyframes pulse {
           0%, 100% { opacity: 1; transform: scale(1); }

@@ -225,6 +225,7 @@ export default function Dashboard() {
             onSelectVessel={handleSelectVessel}
             flyTo={mapTarget}
             satelliteFootprint={satelliteFootprint}
+            activeRegion={activeRegion}
           />
           <DemoMode
             onFlyTo={(center, zoom) => setMapTarget({ center, zoom })}
