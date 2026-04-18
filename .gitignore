@@ -27,3 +27,4 @@ Thumbs.db
 
 # Archive data
 backend/data/archive/
+.gstack/

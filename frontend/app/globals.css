@@ -1,15 +1,27 @@
 @import "tailwindcss";
 
 :root {
-  --background: #070a12;
-  --foreground: #e2e8f0;
-  --panel-bg: #0d1320;
-  --panel-border: #1a2235;
-  --accent-blue: #3b82f6;
-  --accent-red: #ef4444;
-  --accent-yellow: #f59e0b;
-  --accent-green: #22c55e;
-  --accent-orange: #f97316;
+  /* Sentinel palette */
+  --background: #080b14;
+  --background-2: #0e1220;
+  --foreground: #e7ebf3;
+  --panel-bg: rgba(18, 22, 36, 0.6);
+  --panel-solid: #12162a;
+  --panel-border: rgba(255, 255, 255, 0.08);
+  --panel-border-strong: rgba(255, 255, 255, 0.12);
+
+  --text-dim: #9aa3b8;
+  --text-xdim: #596079;
+
+  --accent-violet: #a78bfa;
+  --accent-cyan: #22d3ee;
+  --accent-pink: #f472b6;
+
+  --accent-blue: #60a5fa;
+  --accent-red: #f87171;
+  --accent-yellow: #fbbf24;
+  --accent-green: #4ade80;
+  --accent-orange: #fb923c;
 }
 
 @theme inline {
@@ -22,64 +34,125 @@
   --color-accent-yellow: var(--accent-yellow);
   --color-accent-green: var(--accent-green);
   --color-accent-orange: var(--accent-orange);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-accent-violet: var(--accent-violet);
+  --color-accent-cyan: var(--accent-cyan);
+  --color-accent-pink: var(--accent-pink);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
+  font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
+  font-feature-settings: "cv11", "ss01", "ss03";
 }
 
-/* MapLibre overrides for dark theme */
+/* Ambient glow — applied globally behind all pages for Sentinel feel */
+.ambient-glow {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(ellipse 80% 50% at 10% 0%, rgba(167, 139, 250, 0.10), transparent 60%),
+    radial-gradient(ellipse 60% 50% at 90% 30%, rgba(34, 211, 238, 0.08), transparent 60%),
+    radial-gradient(ellipse 70% 60% at 50% 120%, rgba(244, 114, 182, 0.05), transparent 60%);
+}
+
+body > *:not(.ambient-glow) {
+  position: relative;
+  z-index: 1;
+}
+
+/* Sentinel gradient text */
+.gradient-text {
+  background: linear-gradient(120deg, #a78bfa 0%, #22d3ee 50%, #f472b6 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+/* Glass panel utility */
+.glass {
+  background: rgba(18, 22, 36, 0.6);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.glass-strong {
+  background: rgba(18, 22, 36, 0.85);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+/* Gradient accent button */
+.btn-gradient {
+  background: linear-gradient(135deg, #a78bfa 0%, #22d3ee 100%);
+  color: #08121f;
+  font-weight: 700;
+  box-shadow: 0 8px 32px rgba(167, 139, 250, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.btn-gradient:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 40px rgba(167, 139, 250, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+/* MapLibre overrides for Sentinel */
 .maplibregl-popup-content {
-  background: #1a2235 !important;
-  color: #e2e8f0 !important;
-  border-radius: 8px !important;
-  padding: 12px !important;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.6) !important;
-  border: 1px solid rgba(59, 130, 246, 0.15) !important;
+  background: rgba(18, 22, 36, 0.92) !important;
+  color: #e7ebf3 !important;
+  border-radius: 12px !important;
+  padding: 14px !important;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  backdrop-filter: blur(16px) !important;
 }
 
 .maplibregl-popup-tip {
-  border-top-color: #1a2235 !important;
+  border-top-color: rgba(18, 22, 36, 0.92) !important;
 }
 
 .maplibregl-ctrl-group {
-  background: #0d1320 !important;
-  border: 1px solid #1a2235 !important;
-  border-radius: 8px !important;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.4) !important;
+  background: rgba(18, 22, 36, 0.85) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 10px !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5) !important;
+  backdrop-filter: blur(16px) !important;
 }
 
 .maplibregl-ctrl-group button {
-  filter: invert(0.85);
+  filter: invert(0.9);
 }
 
 .maplibregl-ctrl-group button + button {
-  border-top-color: #1a2235 !important;
+  border-top-color: rgba(255, 255, 255, 0.08) !important;
 }
 
 /* Scrollbar styling */
 ::-webkit-scrollbar {
-  width: 5px;
+  width: 6px;
+  height: 6px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #1e293b;
+  background: rgba(255, 255, 255, 0.08);
   border-radius: 10px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #334155;
+  background: rgba(255, 255, 255, 0.15);
 }
 
-/* Pulse animation for risk dots */
+/* Animations */
 @keyframes pulse-glow {
-  0%, 100% { opacity: 1; box-shadow: 0 0 4px currentColor; }
-  50% { opacity: 0.6; box-shadow: 0 0 12px currentColor; }
+  0%, 100% { opacity: 1; box-shadow: 0 0 8px currentColor; }
+  50% { opacity: 0.5; box-shadow: 0 0 20px currentColor; }
 }
 
 @keyframes subtle-pulse {
@@ -112,31 +185,40 @@ body {
   100% { background-position: 200% 0; }
 }
 
-/* Loading skeleton shimmer */
-.skeleton {
-  background: linear-gradient(90deg, #111827 25%, #1a2235 50%, #111827 75%);
-  background-size: 200% 100%;
-  animation: skeleton-shimmer 1.5s ease-in-out infinite;
-  border-radius: 6px;
+@keyframes ring-pulse {
+  0% { opacity: 1; transform: scale(0.5); }
+  100% { opacity: 0; transform: scale(2); }
 }
 
-/* Cross-browser thin scrollbar */
+.ring-pulse {
+  animation: ring-pulse 2s infinite;
+}
+
+/* Loading skeleton shimmer */
+.skeleton {
+  background: linear-gradient(90deg, rgba(255,255,255,0.02) 25%, rgba(255,255,255,0.06) 50%, rgba(255,255,255,0.02) 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s ease-in-out infinite;
+  border-radius: 8px;
+}
+
 .scroll-thin {
   scrollbar-width: thin;
-  scrollbar-color: #1e293b transparent;
+  scrollbar-color: rgba(255, 255, 255, 0.08) transparent;
 }
 .scroll-thin::-webkit-scrollbar {
   height: 4px;
+  width: 4px;
 }
 .scroll-thin::-webkit-scrollbar-track {
   background: transparent;
 }
 .scroll-thin::-webkit-scrollbar-thumb {
-  background: #1e293b;
+  background: rgba(255, 255, 255, 0.08);
   border-radius: 10px;
 }
 
-/* Timeline slider cross-browser */
+/* Timeline slider — Sentinel */
 input[type="range"].timeline-slider {
   -webkit-appearance: none;
   appearance: none;
@@ -147,30 +229,30 @@ input[type="range"].timeline-slider {
 }
 input[type="range"].timeline-slider::-webkit-slider-runnable-track {
   height: 4px;
-  background: #1a2235;
+  background: rgba(255, 255, 255, 0.08);
   border-radius: 2px;
 }
 input[type="range"].timeline-slider::-moz-range-track {
   height: 4px;
-  background: #1a2235;
+  background: rgba(255, 255, 255, 0.08);
   border-radius: 2px;
   border: none;
 }
 input[type="range"].timeline-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
-  width: 12px;
-  height: 12px;
+  width: 14px;
+  height: 14px;
   border-radius: 50%;
-  background: #60a5fa;
-  border: 2px solid #0d1320;
-  margin-top: -4px;
-  box-shadow: 0 0 6px rgba(96, 165, 250, 0.3);
+  background: linear-gradient(135deg, #a78bfa, #22d3ee);
+  border: 2px solid #0e1220;
+  margin-top: -5px;
+  box-shadow: 0 0 12px rgba(167, 139, 250, 0.4);
 }
 input[type="range"].timeline-slider::-moz-range-thumb {
-  width: 12px;
-  height: 12px;
+  width: 14px;
+  height: 14px;
   border-radius: 50%;
-  background: #60a5fa;
-  border: 2px solid #0d1320;
-  box-shadow: 0 0 6px rgba(96, 165, 250, 0.3);
+  background: linear-gradient(135deg, #a78bfa, #22d3ee);
+  border: 2px solid #0e1220;
+  box-shadow: 0 0 12px rgba(167, 139, 250, 0.4);
 }

@@ -16,65 +16,61 @@ export default function Header({
   alertCount, vesselCount, isLive, positionsIngested, onToggleAnalytics, analyticsOpen, connectionOk = true,
 }: HeaderProps) {
   return (
-    <header className="h-14 bg-[#0d1320] border-b border-[#1a2235] flex items-center justify-between px-5 shrink-0">
-      <div className="flex items-center gap-4">
-        <Link href="/" className="flex items-center gap-2.5 hover:opacity-80 transition-opacity">
-          <div className="w-7 h-7 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-blue-400">
-              <path d="M2 20a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8l-7 5V8l-7 5V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z" />
+    <header className="h-14 glass-strong border-b border-white/[0.08] flex items-center justify-between px-5 shrink-0 relative z-20">
+      <div className="flex items-center gap-5">
+        <Link href="/" className="flex items-center gap-2.5 hover:opacity-90 transition-opacity">
+          <div className="relative w-7 h-7 rounded-lg bg-gradient-to-br from-violet-400 to-cyan-400 flex items-center justify-center shadow-[0_4px_16px_rgba(167,139,250,0.35)]">
+            <div className="absolute inset-[2px] rounded-[5px] bg-gradient-to-br from-[#1a1230] to-[#0d1a2a]" />
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="relative z-10 text-white">
+              <path d="M12 2L3 7v10l9 5 9-5V7l-9-5z" />
             </svg>
           </div>
-          <div className="flex flex-col">
-            <h1 className="text-base font-semibold tracking-wide text-slate-100 leading-tight">
-              HARBOR<span className="text-blue-400">OS</span>
-            </h1>
-            <span className="text-[7px] text-slate-500 uppercase tracking-[0.15em] leading-tight">
-              Maritime Awareness
-            </span>
-          </div>
+          <span className="text-[15px] font-bold tracking-tight text-slate-100 leading-none">HarborOS</span>
         </Link>
 
+        <nav className="hidden md:flex items-center gap-1 ml-2">
+          <NavLink href="/dashboard" active>Operations</NavLink>
+          <NavLink href="/dashboard">Fleet</NavLink>
+          <NavLink href="/dashboard">Alerts</NavLink>
+          <NavLink href="/analytics">Analytics</NavLink>
+        </nav>
       </div>
 
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-2">
         <Stat label="CONTACTS" value={vesselCount} />
         <Stat label="ALERTS" value={alertCount} alert={alertCount > 0} />
         {isLive && positionsIngested != null && (
-          <Stat label="INGESTED" value={positionsIngested.toLocaleString()} />
+          <Stat label="INGEST" value={positionsIngested.toLocaleString()} />
         )}
-
-        <div className="h-6 w-px bg-[#1a2235] mx-2" />
 
         <button
           data-tour="analytics-btn"
           onClick={onToggleAnalytics}
-          className={`text-[10px] transition-colors font-medium tracking-wider uppercase px-2 py-1.5 rounded-lg ${
+          className={`text-[11px] transition-all font-medium tracking-wide px-3 py-1.5 rounded-lg ml-1 ${
             analyticsOpen
-              ? "text-blue-400 bg-blue-500/10"
-              : "text-slate-500 hover:text-blue-400 hover:bg-blue-500/10"
+              ? "text-violet-300 bg-violet-500/10 border border-violet-400/30"
+              : "text-slate-400 hover:text-slate-100 hover:bg-white/[0.04] border border-transparent"
           }`}
         >
           Analytics
         </button>
 
-        <div className="h-6 w-px bg-[#1a2235] mx-1" />
-
         {!connectionOk && (
-          <div className="flex items-center gap-1.5 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-1.5">
-            <span className="inline-block w-1.5 h-1.5 rounded-full bg-red-400" style={{ animation: "subtle-pulse 1s infinite" }} />
-            <span className="text-[10px] font-semibold text-red-400 tracking-wider">OFFLINE</span>
+          <div className="flex items-center gap-1.5 bg-red-500/10 border border-red-500/30 rounded-full px-3 py-1 ml-1">
+            <span className="inline-block w-1.5 h-1.5 rounded-full bg-red-400 shadow-[0_0_8px_#f87171]" style={{ animation: "subtle-pulse 1s infinite" }} />
+            <span className="text-[10px] font-semibold text-red-300 tracking-wider font-mono">OFFLINE</span>
           </div>
         )}
 
         {isLive ? (
-          <div className="flex items-center gap-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-lg px-3 py-1.5">
-            <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400" style={{ animation: "subtle-pulse 2s infinite" }} />
-            <span className="text-[10px] font-semibold text-emerald-400 tracking-wider">LIVE</span>
+          <div className="flex items-center gap-1.5 bg-emerald-500/10 border border-emerald-400/25 rounded-full px-3 py-1 ml-1">
+            <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_#4ade80]" style={{ animation: "subtle-pulse 2s infinite" }} />
+            <span className="text-[10px] font-semibold text-emerald-300 tracking-wider font-mono">LIVE</span>
           </div>
         ) : (
-          <div className="flex items-center gap-1.5 bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-1.5">
-            <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-400" />
-            <span className="text-[10px] font-semibold text-amber-400 tracking-wider">SCENARIO</span>
+          <div className="flex items-center gap-1.5 bg-amber-500/10 border border-amber-400/25 rounded-full px-3 py-1 ml-1">
+            <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-400 shadow-[0_0_8px_#fbbf24]" />
+            <span className="text-[10px] font-semibold text-amber-300 tracking-wider font-mono">SCENARIO</span>
           </div>
         )}
       </div>
@@ -82,11 +78,27 @@ export default function Header({
   );
 }
 
+function NavLink({ href, active, children }: { href: string; active?: boolean; children: React.ReactNode }) {
+  return (
+    <Link
+      href={href}
+      className={`relative text-[13px] font-medium transition-colors px-3 py-1.5 rounded-lg ${
+        active ? "text-slate-100" : "text-slate-400 hover:text-slate-100"
+      }`}
+    >
+      {children}
+      {active && (
+        <span className="absolute left-3 right-3 -bottom-[15px] h-[2px] bg-gradient-to-r from-violet-400 to-cyan-400 rounded-full" />
+      )}
+    </Link>
+  );
+}
+
 function Stat({ label, value, alert }: { label: string; value: number | string; alert?: boolean }) {
   return (
-    <div className="flex items-center gap-2 bg-[#111827]/60 rounded-lg px-3 py-1.5">
-      <span className="text-[9px] text-slate-500 font-medium tracking-wider">{label}</span>
-      <span className={`text-xs font-mono font-semibold ${alert ? "text-red-400" : "text-slate-200"}`}>
+    <div className="flex items-center gap-2 bg-white/[0.03] border border-white/[0.06] rounded-lg px-2.5 py-1.5">
+      <span className="text-[9px] text-slate-500 font-semibold tracking-[0.14em] font-mono">{label}</span>
+      <span className={`text-xs font-mono font-semibold tabular-nums ${alert ? "text-red-300" : "text-slate-100"}`}>
         {value}
       </span>
     </div>

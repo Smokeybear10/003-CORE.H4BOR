@@ -1,20 +1,22 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const inter = Inter({
+  variable: "--font-sans",
   subsets: ["latin"],
+  display: "swap",
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const jetbrainsMono = JetBrains_Mono({
+  variable: "--font-mono",
   subsets: ["latin"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
-  title: "HarborOS — Maritime Awareness Platform",
-  description: "Maritime awareness and operator decision-support platform for contested littoral defense",
+  title: "HarborOS — Maritime Intelligence Platform",
+  description: "Live AIS, satellite fusion, and behavioral detection across nine contested waterways. Built for maritime operators.",
 };
 
 export default function RootLayout({
@@ -25,9 +27,12 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased dark`}
+      className={`${inter.variable} ${jetbrainsMono.variable} h-full antialiased dark`}
     >
-      <body className="min-h-full flex flex-col bg-[#070a12] text-slate-200">{children}</body>
+      <body className="min-h-full flex flex-col bg-[#080b14] text-slate-200 relative">
+        <div aria-hidden className="ambient-glow" />
+        {children}
+      </body>
     </html>
   );
 }
