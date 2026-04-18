@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback, useRef } from "react";
 
 interface FeatureTourProps {
   active: boolean;
-  startAt?: number;
   onComplete: () => void;
   onSelectRegion: (region: string | null) => void;
   onSelectVessel: (vesselId: string) => void;
@@ -23,46 +22,37 @@ interface TourStep {
   position: "right" | "left" | "bottom" | "top";
   interactive?: boolean;
   extraInteractive?: string[];
-  noDim?: boolean; // no overlay/spotlight, just a floating tooltip
+  noDim?: boolean;
   nextLabel?: string;
   action?: () => void;
   cleanup?: () => void;
 }
 
-/* ── Step index constants for readability ── */
 const STEP_REGION = 2;
-const STEP_FEATURE_LAST = 5; // analytics — last "feature tour" step
-const STEP_VESSEL_DEMO = 6; // first vessel demo step
 
 export default function FeatureTour({
   active,
-  startAt = 0,
   onComplete,
   onSelectRegion,
-  onSelectVessel,
+  onSelectVessel: _onSelectVessel,
   onDeselectVessel,
-  onToggleAnalytics,
+  onToggleAnalytics: _onToggleAnalytics,
   onFlyTo,
-  analyticsOpen,
+  analyticsOpen: _analyticsOpen,
   activeRegion,
 }: FeatureTourProps) {
-  const [step, setStep] = useState(startAt);
+  const [step, setStep] = useState(0);
   const [visible, setVisible] = useState(false);
   const [tooltipStyle, setTooltipStyle] = useState<React.CSSProperties>({});
   const [spotlightStyle, setSpotlightStyle] = useState<React.CSSProperties>({});
   const [transitioning, setTransitioning] = useState(false);
+  const [paused, setPaused] = useState(false);
   const cleanupRef = useRef<(() => void) | null>(null);
   const prevRegionRef = useRef<string | null>(null);
   const stepRef = useRef(step);
   stepRef.current = step;
 
-  // Reset step when startAt changes (re-opened for a different phase)
-  useEffect(() => {
-    setStep(startAt);
-  }, [startAt]);
-
   const steps: TourStep[] = [
-    /* ── Feature Tour (0-5) ──────────────────────── */
     {
       title: "Live Vessel Map",
       description: "Real-time vessel positions rendered on a global maritime map. Vessel markers are color-coded by risk level \u2014 green for normal, yellow for monitor, orange for verify, red for escalate.",
@@ -107,65 +97,12 @@ export default function FeatureTour({
       interactive: true,
     },
     {
-      title: "Search, Filter & Sort",
-      description: "Search by vessel name, MMSI, or anomaly type. Filter between active and historical alerts. Sort by risk score, vessel name, or time to find what matters most.",
-      hint: "Try the controls \u2014 they\u2019re live",
-      target: "alert-controls",
-      position: "right",
-      interactive: true,
-    },
-    {
       title: "Analytics Dashboard",
       description: "Command-level overview: risk distribution across the fleet, alert counts by action tier, detection metrics, and ingestion throughput. Click the Analytics button to open it.",
       hint: "Click Analytics to open the dashboard",
       target: "analytics-btn",
       position: "left",
       interactive: true,
-    },
-
-    /* ── Vessel Demo (6-9) ───────────────────────── */
-    {
-      title: "How We Detect Threats",
-      description: "Let\u2019s look at a real example. MV DARK HORIZON is a Marshall Islands-flagged cargo vessel that triggered multiple anomaly detectors \u2014 loitering, AIS dark periods, geofence breach, and more. Each signal has a severity score and a human-readable explanation.",
-      hint: "Scroll the panel to explore each signal",
-      target: "vessel-detail",
-      position: "left",
-      noDim: true,
-      action: () => {
-        onDeselectVessel();
-        if (analyticsOpen) onToggleAnalytics();
-        onSelectRegion("la_harbor");
-        setTimeout(() => onSelectVessel("v-dark-horizon"), 600);
-      },
-    },
-    {
-      title: "Exportable Intelligence Reports",
-      description: "Every vessel assessment can be exported as a comprehensive incident report \u2014 including position trail, anomaly signals with severity scores, and risk assessment. Designed for interagency sharing with Coast Guard, Navy, or intelligence partners.",
-      hint: "Click \u2018Export\u2019 at the top of the panel to see the full report",
-      target: "vessel-detail",
-      position: "left",
-      noDim: true,
-    },
-    {
-      title: "Satellite Imagery Verification",
-      description: "When a vessel is flagged, operators can request satellite imagery verification through the Copernicus Data Space \u2014 ESA\u2019s Sentinel-2 constellation providing 10m resolution optical imagery. This adds a second layer of confirmation beyond AIS.",
-      hint: "Try requesting satellite imagery below",
-      target: "vessel-detail",
-      position: "left",
-      noDim: true,
-    },
-    {
-      title: "Your Turn",
-      description: "This isn\u2019t the only suspicious vessel. The system is continuously monitoring every ship in the fleet. Click on any alert in the feed or any vessel on the map to investigate it yourself.",
-      hint: "Click a vessel on the map or an alert in the feed",
-      target: "map",
-      position: "left",
-      noDim: true,
-      action: () => {
-        onDeselectVessel();
-        onSelectRegion("la_harbor");
-        onFlyTo([-118.26, 33.73], 12.5);
-      },
     },
   ];
 
@@ -218,13 +155,11 @@ export default function FeatureTour({
     setTooltipStyle({ top, left, width: tooltipW });
   }, [current]);
 
-  // Elevate interactive targets above overlay
   useEffect(() => {
     if (!active || !current) return;
     if (!current.interactive) return;
 
     const elevated: HTMLElement[] = [];
-
     const el = document.querySelector(`[data-tour="${current.target}"]`) as HTMLElement | null;
     if (el) {
       el.style.position = "relative";
@@ -253,9 +188,9 @@ export default function FeatureTour({
     };
   }, [active, step, current]);
 
-  // Auto-advance when user picks a region during the region step
+  // Auto-advance when user picks a region during the region step (suspended while paused)
   useEffect(() => {
-    if (!active) return;
+    if (!active || paused) return;
     if (stepRef.current !== STEP_REGION) {
       prevRegionRef.current = activeRegion;
       return;
@@ -267,9 +202,8 @@ export default function FeatureTour({
       return () => clearTimeout(timer);
     }
     prevRegionRef.current = activeRegion;
-  }, [active, activeRegion]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [active, activeRegion, paused]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Run step action and position elements
   useEffect(() => {
     if (!active || !current) return;
 
@@ -281,18 +215,15 @@ export default function FeatureTour({
     if (current.action) current.action();
     if (current.cleanup) cleanupRef.current = current.cleanup;
 
-    // Longer delay for vessel steps that need data to load
-    const delay = step >= STEP_VESSEL_DEMO ? 800 : 400;
     const timer = setTimeout(() => {
       positionElements();
       setVisible(true);
       setTransitioning(false);
-    }, delay);
+    }, 400);
 
     return () => clearTimeout(timer);
   }, [active, step]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Reposition on resize
   useEffect(() => {
     if (!active) return;
     const handler = () => positionElements();
@@ -300,18 +231,18 @@ export default function FeatureTour({
     return () => window.removeEventListener("resize", handler);
   }, [active, positionElements]);
 
-  // Keyboard navigation
   useEffect(() => {
     if (!active) return;
     const handler = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      if (paused) return;
       if (e.key === "ArrowRight" || e.key === " ") { e.preventDefault(); goNext(); }
       if (e.key === "ArrowLeft") { e.preventDefault(); goPrev(); }
       if (e.key === "Escape") handleClose();
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }); // intentionally no deps
+  });
 
   const transition = (nextStep: number) => {
     setTransitioning(true);
@@ -319,40 +250,41 @@ export default function FeatureTour({
     setTimeout(() => setStep(nextStep), 250);
   };
 
-  // When started at 0 (feature tour), stop after analytics (step 5)
-  // When started at STEP_VESSEL_DEMO, run to the end
-  const lastStep = startAt === 0 ? STEP_FEATURE_LAST : totalSteps - 1;
-
   const goNext = () => {
-    if (step >= lastStep) { handleClose(); return; }
+    if (step >= totalSteps - 1) { handleClose(); return; }
     transition(step + 1);
   };
 
   const goPrev = () => {
-    if (step > startAt) transition(step - 1);
+    if (step > 0) transition(step - 1);
   };
 
   const handleClose = () => {
     if (cleanupRef.current) { cleanupRef.current(); cleanupRef.current = null; }
     setVisible(false);
-    setStep(startAt);
+    setPaused(false);
+    setStep(0);
     onComplete();
+  };
+
+  const handleRestart = () => {
+    if (cleanupRef.current) { cleanupRef.current(); cleanupRef.current = null; }
+    setPaused(false);
+    if (step === 0) {
+      const action = steps[0]?.action;
+      if (action) action();
+      return;
+    }
+    transition(0);
   };
 
   if (!active) return null;
 
   const isInteractive = current?.interactive;
-
-  // Progress: show feature tour dots and vessel demo dots separately
-  const isVesselPhase = step >= STEP_VESSEL_DEMO;
-  const featureSteps = STEP_FEATURE_LAST + 1;
-  const vesselSteps = totalSteps - STEP_VESSEL_DEMO;
-
   const isNoDim = current?.noDim;
 
   return (
     <div className="fixed inset-0 z-[60]" style={{ pointerEvents: "none" }}>
-      {/* Dark overlay with spotlight cutout — hidden for noDim steps */}
       {!isNoDim && (
         <>
           <div
@@ -373,14 +305,12 @@ export default function FeatureTour({
             />
           </div>
 
-          {/* Click blocker — only when NOT interactive and NOT noDim */}
-          {!isInteractive && (
+          {!isInteractive && !paused && (
             <div className="absolute inset-0" style={{ zIndex: 2, pointerEvents: "auto" }} onClick={(e) => e.stopPropagation()} />
           )}
         </>
       )}
 
-      {/* Tooltip card */}
       <div
         className={isNoDim ? "fixed z-10" : "absolute z-10"}
         style={isNoDim
@@ -405,25 +335,58 @@ export default function FeatureTour({
         <div className="bg-[#0d1320]/95 backdrop-blur-xl border border-blue-500/20 rounded-xl shadow-2xl shadow-black/40 p-6">
           <div className="flex items-center justify-between mb-4">
             <span className="text-[10px] text-blue-400 font-semibold uppercase tracking-widest">
-              {isVesselPhase ? "Live Demo" : "Feature Tour"}{" "}
-              <span className="text-slate-600">
-                {isVesselPhase
-                  ? `${step - STEP_VESSEL_DEMO + 1} / ${vesselSteps}`
-                  : `${step + 1} / ${featureSteps}`
-                }
-              </span>
+              Feature Tour{" "}
+              <span className="text-slate-600">{step + 1} / {totalSteps}</span>
             </span>
-            <button onClick={handleClose} className="text-slate-600 hover:text-slate-300 transition-colors">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                <path d="M18 6L6 18M6 6l12 12" />
-              </svg>
-            </button>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setPaused((p) => !p)}
+                title={paused ? "Resume" : "Pause"}
+                className="text-slate-500 hover:text-slate-200 transition-colors p-1 rounded hover:bg-white/5"
+              >
+                {paused ? (
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                    <polygon points="5,3 19,12 5,21" />
+                  </svg>
+                ) : (
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                    <rect x="6" y="4" width="4" height="16" />
+                    <rect x="14" y="4" width="4" height="16" />
+                  </svg>
+                )}
+              </button>
+              <button
+                onClick={handleRestart}
+                title="Begin again"
+                className="text-slate-500 hover:text-slate-200 transition-colors p-1 rounded hover:bg-white/5"
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="1 4 1 10 7 10" />
+                  <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
+                </svg>
+              </button>
+              <button
+                onClick={handleClose}
+                title="Close"
+                className="text-slate-600 hover:text-slate-300 transition-colors p-1 rounded hover:bg-white/5"
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                  <path d="M18 6L6 18M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
           </div>
 
-          <h3 className="text-lg font-bold text-white mb-2">{current?.title}</h3>
-          <p className="text-[13px] text-slate-400 leading-relaxed mb-1">{current?.description}</p>
+          <h3 className="text-lg font-bold text-white mb-2">
+            {paused ? "Paused" : current?.title}
+          </h3>
+          <p className="text-[13px] text-slate-400 leading-relaxed mb-1">
+            {paused
+              ? "The tour is paused. Explore freely — resume when you're ready, or begin again from the top."
+              : current?.description}
+          </p>
 
-          {current?.hint && (
+          {!paused && current?.hint && (
             <p className="text-[11px] text-cyan-400/80 mb-4 flex items-center gap-1.5">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="shrink-0">
                 <path d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5" />
@@ -431,64 +394,36 @@ export default function FeatureTour({
               {current.hint}
             </p>
           )}
-          {!current?.hint && <div className="mb-4" />}
+          {(paused || !current?.hint) && <div className="mb-4" />}
 
           <div className="flex items-center justify-between">
             <button
               onClick={goPrev}
-              disabled={step === 0}
+              disabled={paused || step === 0}
               className="text-[11px] text-slate-500 hover:text-slate-200 disabled:opacity-20 disabled:cursor-not-allowed transition-colors px-3 py-1.5 rounded-lg hover:bg-white/5"
             >
               Back
             </button>
 
-            <div className="flex items-center gap-3">
-              {/* Feature tour dots */}
-              <div className="flex gap-1">
-                {Array.from({ length: featureSteps }).map((_, i) => (
-                  <div
-                    key={`f${i}`}
-                    className={`h-1.5 rounded-full transition-all duration-300 ${
-                      !isVesselPhase && i === step
-                        ? "w-5 bg-blue-400"
-                        : i < step
-                          ? "w-1.5 bg-blue-400/30"
-                          : isVesselPhase
-                            ? "w-1.5 bg-blue-400/30"
-                            : "w-1.5 bg-slate-700"
-                    }`}
-                  />
-                ))}
-              </div>
-              {/* Separator */}
-              <div className="w-px h-2 bg-slate-700" />
-              {/* Vessel demo dots */}
-              <div className="flex gap-1">
-                {Array.from({ length: vesselSteps }).map((_, i) => {
-                  const absIdx = STEP_VESSEL_DEMO + i;
-                  return (
-                    <div
-                      key={`v${i}`}
-                      className={`h-1.5 rounded-full transition-all duration-300 ${
-                        absIdx === step
-                          ? "w-5 bg-cyan-400"
-                          : absIdx < step
-                            ? "w-1.5 bg-cyan-400/30"
-                            : "w-1.5 bg-slate-700"
-                      }`}
-                    />
-                  );
-                })}
-              </div>
+            <div className="flex gap-1">
+              {Array.from({ length: totalSteps }).map((_, i) => (
+                <div
+                  key={i}
+                  className={`h-1.5 rounded-full transition-all duration-300 ${
+                    i === step
+                      ? "w-5 bg-blue-400"
+                      : i < step
+                        ? "w-1.5 bg-blue-400/30"
+                        : "w-1.5 bg-slate-700"
+                  }`}
+                />
+              ))}
             </div>
 
             <button
               onClick={goNext}
-              className={`text-[11px] font-semibold text-white px-4 py-1.5 rounded-lg transition-colors ${
-                step === STEP_FEATURE_LAST
-                  ? "bg-cyan-600 hover:bg-cyan-500"
-                  : "bg-blue-600/80 hover:bg-blue-500"
-              }`}
+              disabled={paused}
+              className="text-[11px] font-semibold text-white px-4 py-1.5 rounded-lg transition-colors bg-blue-600/80 hover:bg-blue-500 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {current?.nextLabel ?? (step >= totalSteps - 1 ? "Finish" : "Next")}
             </button>

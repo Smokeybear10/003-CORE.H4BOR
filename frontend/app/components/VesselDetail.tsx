@@ -1394,7 +1394,7 @@ function SatThumbnail({ lat, lng, borderColor = "border-cyan-400/50", variant = 
   }
 
   const isOld = variant === "old";
-  const API_BASE = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api").replace(/\/api$/, "");
+  const API_BASE = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:3003/api").replace(/\/api$/, "");
   const realSrc = imageSrc
     ? imageSrc.startsWith("/api/")
       ? `${API_BASE}${imageSrc}`

@@ -41,7 +41,7 @@ function geofenceColor(zoneType: string): string {
 function resolveSatelliteOverlayUrl(imageSrc?: string, renderToken?: string): string | null {
   if (!imageSrc) return null;
 
-  const apiBase = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api").replace(/\/api$/, "");
+  const apiBase = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:3003/api").replace(/\/api$/, "");
   const absoluteUrl = imageSrc.startsWith("/api/") ? `${apiBase}${imageSrc}` : imageSrc;
   if (!renderToken) return absoluteUrl;
   return `${absoluteUrl}${absoluteUrl.includes("?") ? "&" : "?"}v=${encodeURIComponent(renderToken)}`;
@@ -49,7 +49,7 @@ function resolveSatelliteOverlayUrl(imageSrc?: string, renderToken?: string): st
 
 function resolveSatelliteTileTemplate(tileUrl?: string): string | null {
   if (!tileUrl) return null;
-  const apiBase = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api").replace(/\/api$/, "");
+  const apiBase = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:3003/api").replace(/\/api$/, "");
   return tileUrl.startsWith("/api/") ? `${apiBase}${tileUrl}` : tileUrl;
 }
 

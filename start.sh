@@ -1,6 +1,6 @@
 #!/bin/bash
 # HarborOS — One-command startup
-# Starts both backend (port 8000) and frontend (port 3000)
+# Starts both backend (port 3003) and frontend (port 2003)
 
 set -e
 
@@ -11,7 +11,7 @@ echo "Starting backend..."
 cd backend
 source venv/bin/activate
 python -m app.seed
-uvicorn app.main:app --reload --port 8000 &
+uvicorn app.main:app --reload --port 3003 &
 BACKEND_PID=$!
 cd ..
 
@@ -24,9 +24,9 @@ cd ..
 
 echo ""
 echo "=== HarborOS Running ==="
-echo "  Backend:  http://localhost:8000"
-echo "  Frontend: http://localhost:3000"
-echo "  API Docs: http://localhost:8000/docs"
+echo "  Backend:  http://localhost:3003"
+echo "  Frontend: http://localhost:2003"
+echo "  API Docs: http://localhost:3003/docs"
 echo ""
 echo "Press Ctrl+C to stop both servers"
 

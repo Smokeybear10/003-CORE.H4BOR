@@ -5,13 +5,13 @@
 ```bash
 # Backend
 cd backend && source venv/bin/activate
-uvicorn app.main:app --reload --port 8000
+uvicorn app.main:app --reload --port 3003
 python -m app.seed    # Load demo data
 
 # Frontend
 cd frontend
 npm install
-npm run dev           # http://localhost:3000
+npm run dev           # http://localhost:2003
 
 # Both at once
 ./start.sh
@@ -21,7 +21,7 @@ npm run dev           # http://localhost:3000
 
 - **Backend:** Python, FastAPI, SQLAlchemy, SQLite, Pydantic
 - **Frontend:** Next.js 16, React 19, TypeScript, Tailwind CSS v4, MapLibre GL
-- **Architecture:** REST API on port 8000, frontend on port 3000
+- **Architecture:** REST API on port 3003, frontend on port 2003
 
 ## Project Structure
 

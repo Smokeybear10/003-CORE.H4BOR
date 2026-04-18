@@ -53,7 +53,7 @@ export default function AnalyticsPage() {
 
         // Archive stats
         try {
-          const arch = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api"}/archive/stats`).then((r) => r.json());
+          const arch = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3003/api"}/archive/stats`).then((r) => r.json());
           setArchiveStats(arch);
         } catch {}
 
@@ -82,7 +82,7 @@ export default function AnalyticsPage() {
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
-            <Link href="/" className="text-xs text-blue-400 hover:text-blue-300 mb-2 block">
+            <Link href="/dashboard" className="text-xs text-blue-400 hover:text-blue-300 mb-2 block">
               &larr; Back to Dashboard
             </Link>
             <h1 className="text-2xl font-bold text-slate-100">
