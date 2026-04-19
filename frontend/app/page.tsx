@@ -1,53 +1,16 @@
 import Link from "next/link";
+import { SiteNav, SiteFooter } from "@/app/components/SiteChrome";
+import LaunchButton from "@/app/components/LaunchButton";
 
 export default function Landing() {
   return (
     <main className="min-h-screen">
-      <Nav />
+      <SiteNav />
       <Hero />
       <Features />
       <ConsolePreview />
-      <Footer />
+      <SiteFooter />
     </main>
-  );
-}
-
-function Nav() {
-  return (
-    <nav className="max-w-[1400px] mx-auto flex items-center px-8 py-4 gap-10">
-      <Link href="/" className="flex items-center gap-2.5">
-        <div className="relative w-6 h-6 rounded-md bg-gradient-to-br from-violet-400 to-cyan-400 flex items-center justify-center">
-          <div className="absolute inset-[1.5px] rounded-[4px] bg-gradient-to-br from-[#1a1230] to-[#0d1a2a]" />
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinejoin="round" className="relative z-10 text-white">
-            <path d="M12 2L3 7v10l9 5 9-5V7l-9-5z" />
-          </svg>
-        </div>
-        <span className="text-[14px] font-semibold tracking-tight">HarborOS</span>
-      </Link>
-      <div className="flex gap-6">
-        <NavItem>Product</NavItem>
-        <NavItem>Sectors</NavItem>
-        <NavItem>Detectors</NavItem>
-        <NavItem>Docs</NavItem>
-      </div>
-      <div className="ml-auto flex items-center gap-3">
-        <div className="hidden sm:flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.02] px-2.5 py-1 text-[11px] text-emerald-300 font-mono">
-          <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400" style={{ animation: "subtle-pulse 2.4s infinite" }} />
-          Live · 14,287
-        </div>
-        <Link href="/dashboard" className="btn-primary text-[12.5px] px-3.5 py-1.5 rounded-md inline-flex items-center gap-1.5">
-          Launch <span aria-hidden className="text-[14px] leading-none">→</span>
-        </Link>
-      </div>
-    </nav>
-  );
-}
-
-function NavItem({ children }: { children: React.ReactNode }) {
-  return (
-    <a href="#" className="text-[13px] font-medium text-slate-400 hover:text-slate-100 transition-colors">
-      {children}
-    </a>
   );
 }
 
@@ -71,9 +34,7 @@ function Hero() {
         </p>
 
         <div className="flex flex-wrap gap-2.5 items-center mb-12">
-          <Link href="/dashboard" className="btn-primary text-[13px] px-4 py-2 rounded-md inline-flex items-center gap-2">
-            Launch Operations <span aria-hidden>→</span>
-          </Link>
+          <LaunchButton className="btn-primary text-[13px] px-4 py-2 rounded-md inline-flex items-center gap-2" />
           <a href="#preview" className="btn-secondary text-[13px] px-4 py-2 rounded-md inline-flex items-center gap-2 backdrop-blur">
             See the console
           </a>
@@ -243,9 +204,9 @@ function ConsolePreview() {
             Contacts, sectors, triage queue, and verification at operator tempo.
           </p>
         </div>
-        <Link href="/dashboard" className="btn-primary text-[13px] px-4 py-2 rounded-md inline-flex items-center gap-2">
+        <LaunchButton className="btn-primary text-[13px] px-4 py-2 rounded-md inline-flex items-center gap-2">
           Open console <span aria-hidden>→</span>
-        </Link>
+        </LaunchButton>
       </div>
 
       <div className="glass rounded-xl overflow-hidden border border-white/[0.08]">
@@ -379,11 +340,3 @@ function TriageItem({ name, desc, mmsi, risk, tier, tags, selected }: {
   );
 }
 
-function Footer() {
-  return (
-    <footer className="max-w-[1400px] mx-auto px-8 py-8 border-t border-white/[0.06] flex flex-wrap justify-between gap-4 text-[12px] text-slate-500">
-      <div>HarborOS · v2.4.1 · AIS + SAR fusion for maritime operators</div>
-      <div className="font-mono">© 2026 · Los Angeles, CA</div>
-    </footer>
-  );
-}
