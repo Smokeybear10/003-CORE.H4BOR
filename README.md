@@ -4,6 +4,28 @@ Maritime awareness and operator decision-support platform for contested littoral
 
 Detect suspicious vessels. Assess risk. Recommend action. Dispatch verification.
 
+## Showcase
+
+### Landing — the operator story in one scroll
+
+Maritime intelligence across nine contested waterways, 11 behavioral detectors, Sentinel-2 fusion. Stats are live, detector signals render from real per-sector data.
+
+![Landing: hero and stats](docs/media/landing-overview-1.gif)
+![Landing: detector panel and console preview](docs/media/landing-overview-2.gif)
+
+### Satellite verification — one click, real Sentinel-2 imagery
+
+Click any vessel on the map → **Request Satellite Imagery** → the console pulls the latest Copernicus Sentinel-2 scene for the vessel's bbox and overlays it on the map. No handoff, no tab-switch.
+
+![Sentinel-2 satellite verification](docs/media/satellite-verification.gif)
+
+### Global watch — nine sectors, one surface
+
+Zoom out to see every sector at once. Heatmap renders vessel density; individual tracks surface as you zoom in. Every sector preseeded with geofences, traffic lanes, and sector-specific risk thresholds.
+
+![Global view: zooming across sectors](docs/media/global-map-1.gif)
+![Global view: drilling into a sector](docs/media/global-map-2.gif)
+
 ## The Problem
 
 Harbors and littoral zones are increasingly contested. Small, cheap threats — smuggling vessels, hostile reconnaissance, unauthorized intrusions — exploit gaps in maritime awareness. Legacy systems are expensive, siloed, and slow. Operators drown in raw AIS data with no triage, no scoring, and no clear path to action.

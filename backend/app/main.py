@@ -54,9 +54,23 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# CORS — allow localhost for dev, plus any origins listed in HARBOROS_CORS_ORIGINS
+# (comma-separated, e.g. "https://harboros.vercel.app,https://harboros.app")
+_cors_env = os.environ.get("HARBOROS_CORS_ORIGINS", "").strip()
+_extra_origins = [o.strip() for o in _cors_env.split(",") if o.strip()]
+allow_origins = [
+    "http://localhost:2003",
+    "http://127.0.0.1:2003",
+    "http://localhost:3000",  # next dev default fallback
+    *_extra_origins,
+]
+# Also allow Vercel preview URLs (*.vercel.app) via regex
+allow_origin_regex = r"https://.*\.vercel\.app$" if _extra_origins else None
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:2003", "http://127.0.0.1:2003"],
+    allow_origins=allow_origins,
+    allow_origin_regex=allow_origin_regex,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

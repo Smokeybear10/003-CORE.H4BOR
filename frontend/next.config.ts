@@ -13,7 +13,7 @@ const SECURITY_HEADERS = [
       "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "font-src 'self' data: https://fonts.gstatic.com",
-      "img-src 'self' blob: data: https:",
+      "img-src 'self' blob: data: https: http://localhost:*",
       "connect-src 'self' https://* http://localhost:* ws://localhost:* wss://*",
       "worker-src 'self' blob:",
       "frame-ancestors 'self'",
