@@ -10,6 +10,7 @@ export default function LivePill() {
   useEffect(() => {
     let cancelled = false;
     const tick = async () => {
+      if (typeof document !== "undefined" && document.visibilityState === "hidden") return;
       try {
         const status = await api.getIngestionStatus();
         if (cancelled) return;

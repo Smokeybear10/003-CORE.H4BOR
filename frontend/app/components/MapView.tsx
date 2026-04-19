@@ -267,7 +267,14 @@ export default function MapView({
 }: MapViewProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
-  const markersRef = useRef<Record<string, { marker: maplibregl.Marker; el: HTMLDivElement }>>({});
+  const markersRef = useRef<Record<string, {
+    marker: maplibregl.Marker;
+    el: HTMLDivElement;
+    // Cached render state — skip innerHTML writes when unchanged
+    state: { w: number; h: number; color: string; glow: number; stroke: string; sw: number; type: string; selected: boolean; muted: boolean; course: number } | null;
+    lng: number;
+    lat: number;
+  }>>({});
   const [mapMode, setMapMode] = useState<MapMode>("maps");
   const [satelliteTiles, setSatelliteTiles] = useState<SatelliteTileSource | null>(null);
   const hideNormal = false;
@@ -377,7 +384,6 @@ export default function MapView({
       // Filter out normal vessels when toggle is active
       const hasAnomaly = (vessel.risk_score ?? 0) >= RISK_THRESHOLDS.monitor || (vessel.recommended_action && vessel.recommended_action !== "normal" && vessel.recommended_action !== "ignore");
       if (hideNormal && !hasAnomaly && vessel.id !== selectedVesselId) {
-        // Remove marker if it exists
         if (markersRef.current[vessel.id]) {
           markersRef.current[vessel.id].marker.remove();
           delete markersRef.current[vessel.id];
@@ -388,15 +394,18 @@ export default function MapView({
       currentVesselIds.add(vessel.id);
 
       const score = vessel.risk_score ?? 0;
-      const isMuted = vessel.is_inactive || vessel.is_resolved;
+      const isMuted = !!(vessel.is_inactive || vessel.is_resolved);
       const color = isMuted ? "#64748b" : vesselColor(vessel.risk_score);
       const isSelected = vessel.id === selectedVesselId;
       const h = isSelected ? 42 : score >= RISK_THRESHOLDS.verify ? 34 : 26;
       const course = vessel.latest_position.course_over_ground ?? 0;
       const strokeColor = isSelected ? "#cbd5e1" : "rgba(0,0,0,0.7)";
       const strokeWidth = isSelected ? 1.2 : 0.6;
-      const { hull, deck, bridge, viewBox, ratio } = vesselSvgPaths(vessel.vessel_type ?? "other");
+      const vesselType = vessel.vessel_type ?? "other";
+      const { hull, deck, bridge, viewBox, ratio } = vesselSvgPaths(vesselType);
       const w = Math.round(h * ratio);
+      const lng = vessel.latest_position.longitude;
+      const lat = vessel.latest_position.latitude;
 
       let markerData = markersRef.current[vessel.id];
 
@@ -413,20 +422,42 @@ export default function MapView({
         });
 
         const marker = new maplibregl.Marker({ element: el })
-          .setLngLat([vessel.latest_position.longitude, vessel.latest_position.latitude])
+          .setLngLat([lng, lat])
           .addTo(map);
 
-        markerData = { marker, el };
+        markerData = { marker, el, state: null, lng, lat };
         markersRef.current[vessel.id] = markerData;
       }
 
-      const { marker, el } = markerData;
+      const { marker, el, state, lng: prevLng, lat: prevLat } = markerData;
+
+      // Position update is cheap — always keep in sync via setLngLat (no DOM reflow).
+      if (lng !== prevLng || lat !== prevLat) {
+        marker.setLngLat([lng, lat]);
+        markerData.lng = lng;
+        markerData.lat = lat;
+      }
+
+      // Skip expensive innerHTML write unless visual state actually changed.
+      const unchanged =
+        state &&
+        state.w === w &&
+        state.h === h &&
+        state.color === color &&
+        state.stroke === strokeColor &&
+        state.sw === strokeWidth &&
+        state.type === vesselType &&
+        state.selected === isSelected &&
+        state.muted === isMuted &&
+        state.course === course;
+
+      if (unchanged) return;
 
       el.style.width = `${w}px`;
       el.style.height = `${h}px`;
       const glowSize = isMuted ? 0 : score >= RISK_THRESHOLDS.escalate ? 8 : score >= RISK_THRESHOLDS.verify ? 5 : 3;
       const glowAlpha = isMuted ? "00" : score >= RISK_THRESHOLDS.verify ? "cc" : "80";
-      const pulseAnimation = (!isMuted && score >= RISK_THRESHOLDS.escalate) ? 'animation:pulse 2s infinite;' : '';
+      const pulseAnimation = (!isMuted && score >= RISK_THRESHOLDS.escalate) ? "animation:pulse 2s infinite;" : "";
 
       el.innerHTML = `
       <div style="width:100%;height:100%;${pulseAnimation}">
@@ -439,7 +470,8 @@ export default function MapView({
       </div>`;
 
       el.title = `${vessel.name} (${vessel.mmsi})${vessel.is_inactive && vessel.status_reason ? ` — ${vessel.status_reason}` : ""}`;
-      marker.setLngLat([vessel.latest_position.longitude, vessel.latest_position.latitude]);
+
+      markerData.state = { w, h, color, glow: glowSize, stroke: strokeColor, sw: strokeWidth, type: vesselType, selected: isSelected, muted: isMuted, course };
     });
 
     Object.keys(markersRef.current).forEach((vesselId) => {

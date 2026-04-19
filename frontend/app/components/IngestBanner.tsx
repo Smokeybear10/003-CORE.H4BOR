@@ -43,7 +43,7 @@ export default function IngestBanner({ vesselCount, status, isLive, connectionOk
 
         <div className="relative flex items-center gap-4 px-5 py-3.5">
           <div className="w-11 h-11 rounded-xl border border-white/[0.12] bg-white/[0.03] flex items-center justify-center text-slate-300 shrink-0">
-            <Logomark size={28} animate />
+            <Logomark size={28} />
           </div>
 
           <div className="flex-1 min-w-0">

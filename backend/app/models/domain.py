@@ -394,7 +394,7 @@ class SatelliteVerificationSchema(BaseModel):
 
 class VerificationRequestSchema(BaseModel):
     id: str
-    alert_id: str
+    alert_id: Optional[str] = None
     vessel_id: str
     status: str
     asset_type: Optional[str] = None
@@ -411,7 +411,7 @@ class VerificationRequestSchema(BaseModel):
 
 
 class VerificationRequestCreate(BaseModel):
-    alert_id: str
+    alert_id: Optional[str] = None
     vessel_id: str
     asset_type: Literal["satellite"] = "satellite"
     focus_lat: Optional[float] = None

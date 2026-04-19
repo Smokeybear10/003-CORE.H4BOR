@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import type { Alert } from "@/app/lib/api";
 import { riskLevel } from "@/app/lib/risk";
 
@@ -38,9 +38,13 @@ export default function AlertPeeks({ alerts, onSelectAlert, selectedAlertId }: A
     setDismissed((prev) => new Set([...prev].filter((id) => ids.has(id))));
   }, [alerts]);
 
-  const activeSorted = alerts
-    .filter((a) => a.status === "active" && !dismissed.has(a.id))
-    .sort((a, b) => b.risk_score - a.risk_score);
+  const activeSorted = useMemo(
+    () =>
+      alerts
+        .filter((a) => a.status === "active" && !dismissed.has(a.id))
+        .sort((a, b) => b.risk_score - a.risk_score),
+    [alerts, dismissed],
+  );
 
   if (activeSorted.length === 0) {
     return (

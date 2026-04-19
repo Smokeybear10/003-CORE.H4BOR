@@ -84,7 +84,7 @@ function LaunchOverlay({ onDone }: { onDone: () => void }) {
         {/* Logo */}
         <div className="flex items-center gap-3 mb-6">
           <div className="w-11 h-11 rounded-xl border border-white/[0.1] bg-white/[0.02] flex items-center justify-center launch-logo-glow text-slate-300">
-            <Logomark size={28} animate />
+            <Logomark size={28} />
           </div>
           <div>
             <div className="text-[15px] font-semibold tracking-tight">HarborOS</div>

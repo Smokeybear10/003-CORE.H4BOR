@@ -63,7 +63,7 @@ function ExitOverlay({ onDone }: { onDone: () => void }) {
           </div>
 
           <div className="relative w-14 h-14 rounded-2xl border border-white/[0.14] bg-[rgba(18,22,36,0.85)] backdrop-blur-xl flex items-center justify-center text-slate-200 shadow-[0_0_40px_rgba(167,139,250,0.35)]">
-            <Logomark size={36} animate />
+            <Logomark size={36} />
           </div>
           <div className="text-center">
             <div className="text-[13px] font-semibold tracking-tight text-slate-100">Securing console</div>

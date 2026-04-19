@@ -95,7 +95,7 @@ export interface Geofence {
 
 export interface VerificationRequest {
   id: string;
-  alert_id: string;
+  alert_id: string | null;
   vessel_id: string;
   status: string;
   asset_type: string | null;
@@ -387,14 +387,14 @@ export const api = {
     return `/api/satellite/imagery?${query.toString()}`;
   },
   createVerificationRequest: (
-    alertId: string,
+    alertId: string | null,
     vesselId: string,
     focus?: { latitude: number; longitude: number } | null,
   ) =>
     fetchAPI<VerificationRequest>("/verification-requests", {
       method: "POST",
       body: JSON.stringify({
-        alert_id: alertId,
+        alert_id: alertId ?? null,
         vessel_id: vesselId,
         asset_type: "satellite",
         focus_lat: focus?.latitude ?? null,

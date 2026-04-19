@@ -395,7 +395,6 @@ export default function VesselDetailPanel({
   }, [alertId]);
 
   const handleVerify = async () => {
-    if (!alertId) return;
     setVerifyLoading(true);
     try {
       const vr = await api.createVerificationRequest(alertId, vessel.id, verificationFocus);
@@ -780,7 +779,7 @@ export default function VesselDetailPanel({
               </p>
               <button
                 onClick={handleVerify}
-                disabled={verifyLoading || !alertId}
+                disabled={verifyLoading}
                 className="w-full py-2 px-3 bg-blue-500/15 hover:bg-blue-500/25 border border-blue-500/25 hover:border-blue-500/40 disabled:bg-[#111827] disabled:border-[#1a2235] disabled:text-slate-600 text-blue-400 text-[11px] font-medium rounded-lg transition-all"
               >
                 {verifyLoading ? "Requesting..." : "Request Satellite Imagery"}

@@ -19,6 +19,35 @@ import type { Vessel, VesselDetail, Alert, Geofence, IngestionStatus, Region, Ri
 
 const REFRESH_INTERVAL_MS = 5000;
 
+// Fast equality checks — skip state updates when payload hasn't meaningfully changed.
+// Cheaper than re-rendering a 500-marker map every tick.
+function shallowVesselListEqual(a: Vessel[], b: Vessel[]): boolean {
+  if (a === b) return true;
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    const x = a[i], y = b[i];
+    if (x.id !== y.id) return false;
+    if (x.risk_score !== y.risk_score) return false;
+    if (x.recommended_action !== y.recommended_action) return false;
+    if (x.is_inactive !== y.is_inactive || x.is_resolved !== y.is_resolved) return false;
+    const xp = x.latest_position, yp = y.latest_position;
+    if (xp?.latitude !== yp?.latitude || xp?.longitude !== yp?.longitude) return false;
+    if (xp?.course_over_ground !== yp?.course_over_ground) return false;
+  }
+  return true;
+}
+
+function shallowAlertListEqual(a: Alert[], b: Alert[]): boolean {
+  if (a === b) return true;
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    if (a[i].id !== b[i].id) return false;
+    if (a[i].status !== b[i].status) return false;
+    if (a[i].risk_score !== b[i].risk_score) return false;
+  }
+  return true;
+}
+
 export default function DashboardPage() {
   return (
     <Suspense>
@@ -116,11 +145,13 @@ function Dashboard() {
     }
   }, [autoTour, loading]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Auto-refresh
+  // Auto-refresh — pauses when tab hidden, skips state updates when payload is unchanged.
   useEffect(() => {
     if (refreshTimer.current) clearInterval(refreshTimer.current);
 
-    refreshTimer.current = setInterval(async () => {
+    const tick = async () => {
+      // Don't hammer the API when the user isn't looking.
+      if (typeof document !== "undefined" && document.visibilityState === "hidden") return;
       try {
         const regionParam = activeRegion || undefined;
         const [v, a, status] = await Promise.all([
@@ -128,12 +159,12 @@ function Dashboard() {
           api.getAlerts(alertStatusFilter || undefined, regionParam, alertsLimitRef.current),
           api.getIngestionStatus().catch(() => null),
         ]);
-        setVessels(v.items);
+        // Skip state update (and the map marker diff pass it triggers) if nothing changed.
+        setVessels((prev) => (shallowVesselListEqual(prev, v.items) ? prev : v.items));
         liveVesselsRef.current = v.items;
-        setAlerts(a.items);
+        setAlerts((prev) => (shallowAlertListEqual(prev, a.items) ? prev : a.items));
         setAlertsTotal(a.total);
         if (status) setIngestionStatus(status);
-        // Auto-refresh selected vessel detail for live edge node data
         setSelectedVessel((prev) => {
           if (prev && (prev.id.startsWith("dark-") || prev.id.startsWith("seapod-"))) {
             api.getVesselDetail(prev.id).then(setSelectedVessel).catch(() => {});
@@ -145,8 +176,9 @@ function Dashboard() {
         if (connectionOk) showToast("Connection lost — retrying...", "error");
         setConnectionOk(false);
       }
-    }, REFRESH_INTERVAL_MS);
+    };
 
+    refreshTimer.current = setInterval(tick, REFRESH_INTERVAL_MS);
     return () => { if (refreshTimer.current) clearInterval(refreshTimer.current); };
   }, [activeRegion, alertStatusFilter, connectionOk, showToast]);
 

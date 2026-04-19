@@ -108,7 +108,7 @@ export default function FloatingChrome({
     <div className="absolute top-3 left-3 right-3 z-30 flex items-center gap-2 pointer-events-none">
       {/* Logo pill — returns to landing with exit animation */}
       <ReturnHome className="pointer-events-auto flex items-center gap-2 px-3 py-1.5 rounded-full bg-[rgba(18,22,36,0.82)] backdrop-blur-xl border border-white/[0.14] hover:bg-[rgba(18,22,36,0.9)] hover:border-white/[0.22] transition-colors text-slate-200">
-        <Logomark size={18} animate />
+        <Logomark size={18} />
         <span className="text-[13px] font-semibold tracking-tight text-slate-100">HarborOS</span>
       </ReturnHome>
 
