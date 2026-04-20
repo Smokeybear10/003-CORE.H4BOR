@@ -66,11 +66,80 @@ body > *:not(.ambient-glow) {
 
 /* Sentinel gradient text */
 .gradient-text {
-  background: linear-gradient(120deg, #a78bfa 0%, #22d3ee 50%, #f472b6 100%);
+  background: linear-gradient(120deg, #a78bfa 0%, #22d3ee 40%, #f472b6 70%, #a78bfa 100%);
+  background-size: 220% 100%;
+  background-position: 0% 0%;
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
   color: transparent;
+  animation: gradient-slide 9s ease-in-out infinite;
+}
+@keyframes gradient-slide {
+  0%, 100% { background-position: 0% 0%; }
+  50% { background-position: 100% 0%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .gradient-text { animation: none; }
+}
+
+/* Drifting ambient dots — used for map previews on the landing page */
+@keyframes drift-a {
+  0%, 100% { transform: translate(-50%, -50%) translate(0, 0); }
+  50% { transform: translate(-50%, -50%) translate(2px, -3px); }
+}
+@keyframes drift-b {
+  0%, 100% { transform: translate(-50%, -50%) translate(0, 0); }
+  50% { transform: translate(-50%, -50%) translate(-3px, 2px); }
+}
+@keyframes drift-c {
+  0%, 100% { transform: translate(-50%, -50%) translate(0, 0); }
+  50% { transform: translate(-50%, -50%) translate(1px, 3px); }
+}
+.drift-a { animation: drift-a 5.5s ease-in-out infinite; }
+.drift-b { animation: drift-b 6.2s ease-in-out infinite; }
+.drift-c { animation: drift-c 7.1s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .drift-a, .drift-b, .drift-c { animation: none; }
+}
+
+/* Tilt card — hover lift with spring */
+.tilt-card {
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.3s, box-shadow 0.3s;
+  will-change: transform;
+}
+.tilt-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(255, 255, 255, 0.14);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(167, 139, 250, 0.08);
+}
+
+/* Magnetic button — gentle pull on hover */
+.magnetic {
+  transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.25s;
+  will-change: transform;
+}
+.magnetic:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 30px rgba(167, 139, 250, 0.15);
+}
+
+/* Subtle sheen that slides across a surface on hover */
+.sheen {
+  position: relative;
+  overflow: hidden;
+}
+.sheen::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,0.06) 50%, transparent 70%);
+  transform: translateX(-110%);
+  transition: transform 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+  pointer-events: none;
+}
+.sheen:hover::after {
+  transform: translateX(110%);
 }
 
 /* Glass panel utility */
