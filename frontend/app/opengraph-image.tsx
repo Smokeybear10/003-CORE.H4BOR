@@ -2,7 +2,7 @@ import { ImageResponse } from "next/og";
 
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
-export const alt = "HarborOS — Maritime intelligence, for every horizon.";
+export const alt = "H4BOR | Maritime intelligence, for every horizon.";
 
 export default async function OpenGraphImage() {
   return new ImageResponse(
