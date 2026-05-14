@@ -116,7 +116,7 @@ In `page.tsx`:
 Create `backend/harbor_server.py` — a simple Flask bridge that:
 1. Runs on `0.0.0.0:5000`
 2. Receives POST from the Pi at `/api/sensor`
-3. Forwards the JSON to the FastAPI backend at `http://localhost:8000/api/edge-node/alert`
+3. Forwards the JSON to the FastAPI backend at `http://localhost:3003/api/edge-node/alert`
 4. This is needed because the Pi sends to the Flask server over the hotspot, and Flask relays to FastAPI
 
 Alternatively, if both Pi and laptop are on the same hotspot and FastAPI is accessible, the Pi can POST directly to FastAPI's `/api/edge-node/alert` — skip Flask entirely.
@@ -128,7 +128,7 @@ Create `hardware/pi_emitter.py`:
 import requests
 import time
 
-SERVER_URL = "http://LAPTOP_IP:8000/api/edge-node/alert"
+SERVER_URL = "http://LAPTOP_IP:3003/api/edge-node/alert"
 
 while True:
     # In production: read from camera pipeline

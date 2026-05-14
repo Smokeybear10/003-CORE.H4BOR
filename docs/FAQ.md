@@ -28,14 +28,14 @@ That means the seeded scenario, the operator triage flow, and even the satellite
 You need the backend and frontend running locally, plus Python dependencies for FastAPI and Node dependencies for Next.js. The seeded demo scenario works without live AIS, live camera, or Copernicus credentials, so you can bring up the baseline platform with local tooling only.
 
 ### Which environment variables and API credentials are required or optional?
-Optional credentials unlock live integrations: `AISSTREAM_API_KEY` enables live AIS ingestion, and `CDSE_CLIENT_ID` plus `CDSE_CLIENT_SECRET` enable Copernicus Sentinel-2 search and imagery. `NEXT_PUBLIC_API_URL` is optional on the frontend and only needed when the API is not served from `http://localhost:8000/api`.
+Optional credentials unlock live integrations: `AISSTREAM_API_KEY` enables live AIS ingestion, and `CDSE_CLIENT_ID` plus `CDSE_CLIENT_SECRET` enable Copernicus Sentinel-2 search and imagery. `NEXT_PUBLIC_API_URL` is optional on the frontend and only needed when the API is not served from `http://localhost:3003/api`.
 
 If the AIS key is absent, the backend falls back to seeded-only behavior instead of failing startup. If the Copernicus keys are absent, the dashboard still loads, but live Sentinel search and imagery stay unavailable and the UI uses fallback imagery paths instead.
 
 ### How do I start the backend and frontend?
-From `backend/`, create a virtual environment, install `requirements.txt`, seed the demo data with `python -m app.seed`, and run `uvicorn app.main:app --reload --port 8000`. From `frontend/`, run `npm install` and `npm run dev`, then open `http://localhost:3000`.
+From `backend/`, create a virtual environment, install `requirements.txt`, seed the demo data with `python -m app.seed`, and run `uvicorn app.main:app --reload --port 3003`. From `frontend/`, run `npm install` and `npm run dev`, then open `http://localhost:2003`.
 
-The backend initializes the database on startup and only auto-starts live AIS when `AISSTREAM_API_KEY` is present. The frontend defaults to `http://localhost:8000/api`, so the standard two-terminal local setup works without extra config.
+The backend initializes the database on startup and only auto-starts live AIS when `AISSTREAM_API_KEY` is present. The frontend defaults to `http://localhost:3003/api`, so the standard two-terminal local setup works without extra config.
 
 ## Core Features
 
@@ -104,7 +104,7 @@ The hardware reference calls out `pyserial` and `pynmea2` for GPS, `smbus2` for 
 That means the Pi is not just a dumb camera relay. Even in the current demo concept, it is doing real edge processing before HarborOS receives the event.
 
 ### How does the Pi communicate with HarborOS?
-The current hardware reference uses HTTP POST with JSON to `http://<LAPTOP>.local:8000/api/edge-node/alert`, with the Pi discovering the laptop through mDNS rather than a hardcoded IP. The demo notes describe the same basic pattern over a local hotspot network.
+The current hardware reference uses HTTP POST with JSON to `http://<LAPTOP>.local:3003/api/edge-node/alert`, with the Pi discovering the laptop through mDNS rather than a hardcoded IP. The demo notes describe the same basic pattern over a local hotspot network.
 
 Current implementation already supports this backend ingestion path. Once the payload arrives, the frontend picks it up on the next normal refresh cycle instead of needing a separate special-purpose socket just for SeaPod.
 
@@ -146,7 +146,7 @@ For hackathon work, those commands matter as much as the main payload flow. Hard
 ## Troubleshooting
 
 ### Why is the frontend not connecting to the backend?
-The frontend expects the API at `http://localhost:8000/api` unless `NEXT_PUBLIC_API_URL` is set. If the backend is not running, CORS is misconfigured, or the frontend is pointed at the wrong API base, the dashboard will fail to load and show connection errors.
+The frontend expects the API at `http://localhost:3003/api` unless `NEXT_PUBLIC_API_URL` is set. If the backend is not running, CORS is misconfigured, or the frontend is pointed at the wrong API base, the dashboard will fail to load and show connection errors.
 
 ### Why are live AIS vessels not updating?
 Current implementation only starts live AIS automatically when `AISSTREAM_API_KEY` is present. Without that key, HarborOS runs on seeded data only, and even with the key, updates still depend on the background ingestion loop, the AISStream connection, and the frontend’s 5-second polling refresh.
