@@ -1,8 +1,32 @@
 # HarborOS
 
+**Live demo: [h4bor.vercel.app](https://h4bor.vercel.app)**
+
+> Railway backend is currently down — the live demo can't pull real-time data without it. If you'd like to help keep this project running, [sponsor on GitHub](https://github.com/sponsors/Smokeybear10). Every bit goes straight to hosting.
+
 Maritime awareness and operator decision-support platform for contested littoral defense.
 
 Detect suspicious vessels. Assess risk. Recommend action. Dispatch verification.
+
+## Quick Start
+
+```bash
+# Backend
+cd backend
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+python -m app.seed          # Load demo data
+uvicorn app.main:app --reload --port 3003
+
+# Frontend (separate terminal)
+cd frontend
+npm install
+npm run dev                 # http://localhost:2003
+
+# Or both at once
+./start.sh
+```
 
 ## Showcase
 
@@ -40,26 +64,6 @@ HarborOS turns raw vessel traffic data into operator decisions through a four-st
 4. **Verify** — Clean integration surface for dispatching verification assets (cameras, patrol boats, drones)
 
 Every alert is explainable. Every risk score shows its work.
-
-## Quick Start
-
-```bash
-# Backend
-cd backend
-python -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-python -m app.seed          # Load demo data
-uvicorn app.main:app --reload --port 8000
-
-# Frontend (separate terminal)
-cd frontend
-npm install
-npm run dev                 # http://localhost:3000
-
-# Or both at once
-./start.sh
-```
 
 ## How the Algorithm Works
 
@@ -283,3 +287,7 @@ Nothing here is required to run the demo — HarborOS is fully functional withou
 ## License
 
 Proprietary
+
+---
+
+Built by Thomas Ou
