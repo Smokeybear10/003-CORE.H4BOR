@@ -1,6 +1,5 @@
 import { SiteNav, SiteFooter } from "@/app/components/SiteChrome";
 import LaunchButton from "@/app/components/LaunchButton";
-import ScrollProgress from "@/app/components/ScrollProgress";
 import MouseParallax from "@/app/components/MouseParallax";
 import CountUp from "@/app/components/CountUp";
 import AnimatedBar from "@/app/components/AnimatedBar";
@@ -9,7 +8,6 @@ import Reveal from "@/app/components/Reveal";
 export default function Landing() {
   return (
     <main id="main" className="min-h-screen">
-      <ScrollProgress />
       <SiteNav />
       <Hero />
       <Features />

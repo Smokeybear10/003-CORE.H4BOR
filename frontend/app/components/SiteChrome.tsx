@@ -1,39 +1,34 @@
 import Link from "next/link";
 import LaunchButton from "@/app/components/LaunchButton";
 import Logomark from "@/app/components/Logomark";
-import LivePill from "@/app/components/LivePill";
 
 const NAV: { label: string; href: string }[] = [
-  { label: "Product", href: "/product" },
-  { label: "Sectors", href: "/sectors" },
-  { label: "Detectors", href: "/detectors" },
+  { label: "Home", href: "/" },
   { label: "Docs", href: "/docs" },
+  { label: "About", href: "/about" },
 ];
 
 export function SiteNav({ active }: { active?: string }) {
   return (
-    <nav className="max-w-[1400px] mx-auto flex items-center px-8 py-4 gap-10">
+    <nav className="max-w-[1400px] mx-auto flex items-center px-8 py-4 gap-8">
       <Link href="/" className="flex items-center gap-2.5 text-slate-200">
         <Logomark size={22} />
         <span className="text-[14px] font-semibold tracking-tight text-slate-100">HarborOS</span>
       </Link>
-      <div className="flex gap-6">
+      <div className="ml-auto flex items-center gap-6">
         {NAV.map((item) => (
           <Link
             key={item.href}
             href={item.href}
-            className={`text-[13px] font-medium transition-colors ${
+            className={`text-[13px] transition-colors ${
               active === item.label ? "text-slate-100" : "text-slate-400 hover:text-slate-100"
             }`}
           >
             {item.label}
           </Link>
         ))}
-      </div>
-      <div className="ml-auto flex items-center gap-3">
-        <LivePill />
-        <LaunchButton className="btn-primary text-[12.5px] px-3.5 py-1.5 rounded-md inline-flex items-center gap-1.5">
-          Launch <span aria-hidden className="text-[14px] leading-none">→</span>
+        <LaunchButton className="btn-primary text-[12.5px] px-3.5 py-1.5 rounded-md">
+          Launch
         </LaunchButton>
       </div>
     </nav>
